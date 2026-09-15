@@ -3,5 +3,8 @@ __pycache__/
 .pytest_cache/
 .tracepilot/
 reports/*.tmp.json
+reports/model-evaluation-zhipu-20260915.json
+reports/model-evaluation-zhipu-smoke.json
+.env
 *.pyc
 target/

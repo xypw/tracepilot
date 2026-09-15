@@ -95,7 +95,9 @@ $env:TRACEPILOT_MODEL = "your-model"
 
 真实模型评测入口为 `scripts/run_model_evaluation.py`。它会把失败日志及候选 Java 源码发送给配置的模型供应商，必须先确认数据授权；报告记录模型、地址、逐例结果和延迟，但不会记录 API Key。
 
-GitHub Actions 会运行 17 项单元测试与 12 类离线端到端评测，阻止工作流、安全边界或修复行为回归。
+2026-09-15 获得虚构数据外发授权后，对 GLM-4.7-Flash 发起固定案例评测。第一批 12 条因 Windows 下 SQLite 连接未在临时目录清理前释放而全部成为评测器错误；修复资源关闭顺序后，1 条冒烟请求又收到供应商 HTTP 429，因此仍没有可用于统计模型准确率的有效样本。脱敏汇总见 [`reports/model-evaluation-summary-zhipu-20260915.json`](reports/model-evaluation-summary-zhipu-20260915.json)；含本机临时路径的原始排错报告仅本地保留且被 Git 忽略。这些结果只用于暴露评测基础设施和外部依赖问题，**不作为模型修复准确率，也不写入简历成果**。
+
+GitHub Actions 会运行 20 项单元测试、12 类离线端到端评测并构建 Docker 镜像，阻止工作流、安全边界、修复行为或容器构建回归。
 
 ## 简历证据索引
 
@@ -103,7 +105,7 @@ GitHub Actions 会运行 17 项单元测试与 12 类离线端到端评测，阻
 | --- | --- | --- |
 | 12 类故障基线全部修复 | `evaluation_data/cases.json`、`reports/offline-evaluation.json` | 确定性规划器，不是模型成功率 |
 | 确认前零写入、重启恢复、重复确认幂等均为 12/12 | 同一逐例报告 | 固定虚构故障集 |
-| 17 项单元测试通过 | `tests/` 与 GitHub Actions | 工程回归，不是业务效果 |
+| 20 项单元测试通过 | `tests/` 与 GitHub Actions | 工程回归，不是业务效果 |
 | OpenAI 兼容模型入口 | `providers.py`、`run_model_evaluation.py` | 真实指标必须实际外部评测后再写 |
 
 ## 项目边界

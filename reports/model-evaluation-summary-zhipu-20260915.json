@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "date": "2026-09-15",
+    "provider": "Zhipu OpenAI-compatible API",
+    "model": "glm-4.7-flash",
+    "requested_case_count": 12,
+    "valid_model_case_count": 0,
+    "api_key_recorded": false,
+    "personal_path_recorded": false
+  },
+  "outcome": {
+    "initial_batch": {
+      "case_count": 12,
+      "status": "INVALID_EVALUATOR_RUN",
+      "reason": "SQLite resources were closed after temporary-directory cleanup on Windows"
+    },
+    "post_fix_smoke": {
+      "case_count": 1,
+      "status": "PROVIDER_ERROR",
+      "reason": "HTTP 429"
+    }
+  },
+  "resume_claim_allowed": false,
+  "conclusion": "No valid real-model accuracy metric was produced."
+}

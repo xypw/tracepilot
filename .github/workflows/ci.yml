@@ -19,3 +19,9 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - run: python -m pytest
       - run: python -m scripts.run_evaluation --output reports/ci-evaluation.tmp.json
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t tracepilot:ci .
