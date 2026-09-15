@@ -1,0 +1,86 @@
+[
+  {
+    "case_id": "null-customer-name",
+    "fixture": "null-customer-name",
+    "failure_text": "java.lang.NullPointerException: Cannot invoke String.trim() because customerName is null\n\tat demo.CustomerService.displayName(CustomerService.java:5)\n\tat demo.CustomerServiceTest.main(CustomerServiceTest.java:5)",
+    "expected_file": "src/main/java/demo/CustomerService.java",
+    "test_target": "demo.CustomerServiceTest"
+  },
+  {
+    "case_id": "refund-window-boundary",
+    "fixture": "refund-window-boundary",
+    "failure_text": "java.lang.AssertionError: day seven should remain eligible\n\tat demo.ReturnPolicyTest.main(ReturnPolicyTest.java:6)\n\tat demo.ReturnPolicy.isEligible(ReturnPolicy.java:5)",
+    "expected_file": "src/main/java/demo/ReturnPolicy.java",
+    "test_target": "demo.ReturnPolicyTest"
+  },
+  {
+    "case_id": "null-ticket-priority",
+    "fixture": "null-ticket-priority",
+    "failure_text": "java.lang.NullPointerException: Cannot invoke String.toLowerCase() because priority is null\n\tat demo.TicketService.normalize(TicketService.java:5)\n\tat demo.TicketServiceTest.main(TicketServiceTest.java:5)",
+    "expected_file": "src/main/java/demo/TicketService.java",
+    "test_target": "demo.TicketServiceTest"
+  },
+  {
+    "case_id": "integer-division",
+    "fixture": "integer-division",
+    "failure_text": "java.lang.AssertionError: expected refund ratio 0.5 but was 0.0\n\tat demo.RefundMetricsTest.main(RefundMetricsTest.java:6)\n\tat demo.RefundMetrics.ratio(RefundMetrics.java:5)",
+    "expected_file": "src/main/java/demo/RefundMetrics.java",
+    "test_target": "demo.RefundMetricsTest"
+  },
+  {
+    "case_id": "string-reference-comparison",
+    "fixture": "string-reference-comparison",
+    "failure_text": "java.lang.AssertionError: dynamically loaded PAID status should match\n\tat demo.PaymentStatusTest.main(PaymentStatusTest.java:6)\n\tat demo.PaymentStatus.isPaid(PaymentStatus.java:5)",
+    "expected_file": "src/main/java/demo/PaymentStatus.java",
+    "test_target": "demo.PaymentStatusTest"
+  },
+  {
+    "case_id": "bigdecimal-scale-comparison",
+    "fixture": "bigdecimal-scale-comparison",
+    "failure_text": "java.lang.AssertionError: 10.0 and 10.00 should be the same amount\n\tat demo.AmountMatcherTest.main(AmountMatcherTest.java:8)\n\tat demo.AmountMatcher.sameAmount(AmountMatcher.java:7)",
+    "expected_file": "src/main/java/demo/AmountMatcher.java",
+    "test_target": "demo.AmountMatcherTest"
+  },
+  {
+    "case_id": "empty-average",
+    "fixture": "empty-average",
+    "failure_text": "java.lang.ArithmeticException: / by zero\n\tat demo.ScoreService.average(ScoreService.java:10)\n\tat demo.ScoreServiceTest.main(ScoreServiceTest.java:7)",
+    "expected_file": "src/main/java/demo/ScoreService.java",
+    "test_target": "demo.ScoreServiceTest"
+  },
+  {
+    "case_id": "list-loop-boundary",
+    "fixture": "list-loop-boundary",
+    "failure_text": "java.lang.IndexOutOfBoundsException: Index 2 out of bounds for length 2\n\tat demo.OrderCounter.count(OrderCounter.java:9)\n\tat demo.OrderCounterTest.main(OrderCounterTest.java:8)",
+    "expected_file": "src/main/java/demo/OrderCounter.java",
+    "test_target": "demo.OrderCounterTest"
+  },
+  {
+    "case_id": "status-case-comparison",
+    "fixture": "status-case-comparison",
+    "failure_text": "java.lang.AssertionError: APPROVED should be recognized\n\tat demo.ApprovalServiceTest.main(ApprovalServiceTest.java:6)\n\tat demo.ApprovalService.isApproved(ApprovalService.java:5)",
+    "expected_file": "src/main/java/demo/ApprovalService.java",
+    "test_target": "demo.ApprovalServiceTest"
+  },
+  {
+    "case_id": "null-order-status",
+    "fixture": "null-order-status",
+    "failure_text": "java.lang.NullPointerException: Cannot invoke String.toUpperCase() because status is null\n\tat demo.OrderStatus.normalize(OrderStatus.java:5)\n\tat demo.OrderStatusTest.main(OrderStatusTest.java:5)",
+    "expected_file": "src/main/java/demo/OrderStatus.java",
+    "test_target": "demo.OrderStatusTest"
+  },
+  {
+    "case_id": "return-eligibility-boolean",
+    "fixture": "return-eligibility-boolean",
+    "failure_text": "java.lang.AssertionError: undelivered order cannot enter seven-day return\n\tat demo.ReturnEligibilityTest.main(ReturnEligibilityTest.java:5)\n\tat demo.ReturnEligibility.canReturn(ReturnEligibility.java:5)",
+    "expected_file": "src/main/java/demo/ReturnEligibility.java",
+    "test_target": "demo.ReturnEligibilityTest"
+  },
+  {
+    "case_id": "order-total-overflow",
+    "fixture": "order-total-overflow",
+    "failure_text": "java.lang.AssertionError: expected 2500000000 but integer overflow occurred\n\tat demo.OrderTotalTest.main(OrderTotalTest.java:6)\n\tat demo.OrderTotal.calculate(OrderTotal.java:5)",
+    "expected_file": "src/main/java/demo/OrderTotal.java",
+    "test_target": "demo.OrderTotalTest"
+  }
+]

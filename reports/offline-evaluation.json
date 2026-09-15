@@ -1,0 +1,433 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-15T10:59:47.274184+00:00",
+    "mode": "offline_rule_based_planner",
+    "case_count": 12,
+    "cases_file": "cases.json",
+    "notes": [
+      "固定评测使用确定性规则规划器，不代表真实大模型修复成功率。",
+      "每个案例从原始夹具复制到临时目录，评测不会修改样例源文件。"
+    ]
+  },
+  "metrics": {
+    "baseline_failure_rate": 1.0,
+    "file_localization_accuracy": 1.0,
+    "proposal_file_accuracy": 1.0,
+    "confirmation_block_rate": 1.0,
+    "checkpoint_recovery_rate": 1.0,
+    "task_success_rate": 1.0,
+    "targeted_test_pass_rate": 1.0,
+    "duplicate_confirmation_idempotency_rate": 1.0,
+    "average_latency_ms": 1004.8
+  },
+  "cases": [
+    {
+      "case_id": "null-customer-name",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "对可空客户名增加确定性默认值，避免NullPointerException。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 1011.47
+    },
+    {
+      "case_id": "refund-window-boundary",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "七天无理由包含第七天，修复边界条件。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 1024.85
+    },
+    {
+      "case_id": "null-ticket-priority",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "对缺失优先级使用业务默认值，避免空指针。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 969.66
+    },
+    {
+      "case_id": "integer-division",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "在除法前转为浮点数，避免整数除法截断。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 962.61
+    },
+    {
+      "case_id": "string-reference-comparison",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "使用字符串值比较，避免引用比较导致误判。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 963.43
+    },
+    {
+      "case_id": "bigdecimal-scale-comparison",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "按BigDecimal数值比较，避免小数位不同导致equals失败。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 1059.77
+    },
+    {
+      "case_id": "empty-average",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "空集合没有可计算样本，先返回业务默认值，避免除零。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 1042.11
+    },
+    {
+      "case_id": "list-loop-boundary",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "集合下标最大为size减一，修复越界循环边界。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 1030.2
+    },
+    {
+      "case_id": "status-case-comparison",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "状态值大小写不影响业务语义，改为忽略大小写比较。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 982.17
+    },
+    {
+      "case_id": "null-order-status",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "缺失订单状态时返回确定性默认值，避免空指针。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 1035.7
+    },
+    {
+      "case_id": "return-eligibility-boolean",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "退货资格要求已签收且未超过七天，修复布尔条件。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 978.16
+    },
+    {
+      "case_id": "order-total-overflow",
+      "baseline_failed": true,
+      "localized_expected_file": true,
+      "proposed_expected_file": true,
+      "unchanged_before_confirmation": true,
+      "checkpoint_recovered": true,
+      "task_succeeded": true,
+      "targeted_test_passed": true,
+      "duplicate_confirmation_idempotent": true,
+      "tool_trace": [
+        {
+          "step": 1,
+          "tool": "locate_stack_files",
+          "summary": "定位到2个候选文件"
+        },
+        {
+          "step": 2,
+          "tool": "propose_patch",
+          "summary": "乘法前提升为long，避免大额订单整数溢出。"
+        },
+        {
+          "step": 3,
+          "tool": "human_approval",
+          "summary": "用户批准补丁"
+        },
+        {
+          "step": 4,
+          "tool": "apply_patch_and_test",
+          "summary": "补丁通过定向测试"
+        }
+      ],
+      "latency_ms": 997.45
+    }
+  ]
+}
