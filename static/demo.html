@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TracePilot 演示</title>
+  <style>
+    :root { color-scheme: light; font-family: "Microsoft YaHei", system-ui, sans-serif; }
+    body { margin: 0; background: #f4f7fb; color: #172033; }
+    main { max-width: 980px; margin: 32px auto; padding: 0 20px; }
+    h1 { margin-bottom: 6px; }
+    .sub { color: #526078; margin-top: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .card { background: white; border: 1px solid #dbe3ef; border-radius: 12px; padding: 18px; box-shadow: 0 6px 20px #243b6410; }
+    label { display: block; font-weight: 700; margin: 12px 0 6px; }
+    textarea, input { width: 100%; box-sizing: border-box; border: 1px solid #b9c6d8; border-radius: 7px; padding: 10px; font: inherit; }
+    textarea { min-height: 190px; resize: vertical; }
+    button { margin-top: 12px; border: 0; border-radius: 7px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+    .primary { color: white; background: #2457d6; }
+    .approve { color: white; background: #168052; }
+    .reject { color: #8c2f2f; background: #fae7e7; margin-left: 8px; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #101827; color: #dce8ff; padding: 14px; border-radius: 8px; min-height: 280px; }
+    .status { font-weight: 700; color: #2457d6; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>TracePilot</h1>
+  <p class="sub">Java 测试失败的受控修复 Agent：先复现、再提案、确认后执行。</p>
+  <div class="grid">
+    <section class="card">
+      <label for="failure">失败日志</label>
+      <textarea id="failure">java.lang.NullPointerException
+at demo.CustomerService.displayName(CustomerService.java:5)</textarea>
+      <label for="target">定向测试类</label>
+      <input id="target" value="demo.CustomerServiceTest">
+      <button id="start" class="primary">开始诊断</button>
+      <button id="approve" class="approve" disabled>确认并执行</button>
+      <button id="reject" class="reject" disabled>拒绝</button>
+      <p>状态：<span id="status" class="status">未开始</span></p>
+    </section>
+    <section class="card">
+      <strong>补丁、工具轨迹与测试结果</strong>
+      <pre id="output">等待提交失败日志。</pre>
+    </section>
+  </div>
+</main>
+<script>
+  let current = null;
+  const output = document.querySelector('#output');
+  const status = document.querySelector('#status');
+  const approve = document.querySelector('#approve');
+  const reject = document.querySelector('#reject');
+
+  function show(data) {
+    current = data;
+    status.textContent = data.status;
+    output.textContent = JSON.stringify(data, null, 2);
+    const waiting = data.status === 'WAITING_APPROVAL';
+    approve.disabled = !waiting;
+    reject.disabled = !waiting;
+  }
+
+  async function request(url, options) {
+    const response = await fetch(url, options);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || JSON.stringify(data));
+    return data;
+  }
+
+  document.querySelector('#start').addEventListener('click', async () => {
+    try {
+      show(await request('/runs', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          failure_text: document.querySelector('#failure').value,
+          test_target: document.querySelector('#target').value
+        })
+      }));
+    } catch (error) { status.textContent = '失败'; output.textContent = error.message; }
+  });
+
+  async function decide(approved) {
+    if (!current?.proposal) return;
+    try {
+      show(await request(`/runs/${current.run_id}/approval`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({approved, proposal_digest: current.proposal.proposal_digest})
+      }));
+    } catch (error) { status.textContent = '失败'; output.textContent = error.message; }
+  }
+  approve.addEventListener('click', () => decide(true));
+  reject.addEventListener('click', () => decide(false));
+</script>
+</body>
+</html>

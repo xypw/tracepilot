@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
 from tracepilot.models import ApprovalRequest, RepairRequest, RepairRunResponse
 from tracepilot.workflow import RepairWorkflow
@@ -14,6 +17,10 @@ def create_app(workflow: RepairWorkflow) -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/demo", include_in_schema=False)
+    def demo_page() -> FileResponse:
+        return FileResponse(Path(__file__).resolve().parents[1] / "static" / "demo.html")
 
     @app.post("/runs", response_model=RepairRunResponse)
     def start_run(request: RepairRequest) -> RepairRunResponse:
@@ -39,4 +46,3 @@ def create_app(workflow: RepairWorkflow) -> FastAPI:
             raise HTTPException(status_code=409, detail=str(error)) from error
 
     return app
-

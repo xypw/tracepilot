@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class RunStatus(str, Enum):
     DIAGNOSING = "DIAGNOSING"
     WAITING_APPROVAL = "WAITING_APPROVAL"
+    NOT_REPRODUCED = "NOT_REPRODUCED"
     CANCELED = "CANCELED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
@@ -106,6 +107,7 @@ class RepairRunResponse(BaseModel):
     candidate_files: list[str] = Field(default_factory=list)
     proposal: PatchProposal | None = None
     diff_preview: str | None = None
+    baseline_test_result: TestResult | None = None
     test_result: TestResult | None = None
     trace: list[ToolTrace] = Field(default_factory=list)
     error: str | None = None

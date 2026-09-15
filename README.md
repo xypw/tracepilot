@@ -17,14 +17,16 @@ TracePilot 是一个面向 Java 测试失败的受控修复 Agent。它从 Stack
 ```mermaid
 flowchart LR
     A[测试失败日志] --> B[定位候选 Java 文件]
-    B --> C[规则或模型生成结构化补丁]
-    C --> D[绑定源码与补丁 SHA-256]
-    D --> E{人工确认}
-    E -- 拒绝 --> F[结束且零写入]
-    E -- 通过 --> G[受限写入 src/main/java]
-    G --> H[运行白名单定向测试]
-    H -- 通过 --> I[保存完成回执]
-    H -- 失败 --> J[自动回滚]
+    B --> C[先运行白名单定向测试]
+    C -- 未复现 --> K[停止修复]
+    C -- 已复现 --> D[规则或模型生成结构化补丁]
+    D --> E[绑定源码与补丁 SHA-256]
+    E --> F{人工确认}
+    F -- 拒绝 --> G[结束且零写入]
+    F -- 通过 --> H[受限写入 src/main/java]
+    H --> I[重新运行定向测试]
+    I -- 通过 --> J[保存完成回执]
+    I -- 失败 --> L[自动回滚]
 ```
 
 LangGraph 负责流程状态和中断恢复，SQLite 保存检查点与幂等回执；FastAPI 提供启动、查询和确认接口。模型模式通过 OpenAI 兼容接口接入，但模型没有文件写入或命令执行能力。
@@ -52,6 +54,13 @@ $env:TRACEPILOT_JAVAC = "C:\path\to\javac.exe"
 ```
 
 打开 `http://127.0.0.1:8020/docs` 查看 FastAPI 接口文档。默认 `TRACEPILOT_PLANNER=offline`，用于无外部 API 的可复现演示。
+打开 `http://127.0.0.1:8020/demo` 可在页面中提交失败日志、查看 diff，并选择确认或拒绝。
+
+也可以使用 Docker Compose 启动内置的虚构 Java 故障样例：
+
+```powershell
+docker compose up --build
+```
 
 真实模型模式还需要：
 
@@ -84,8 +93,21 @@ $env:TRACEPILOT_MODEL = "your-model"
 
 当前离线报告见 [`reports/offline-evaluation.json`](reports/offline-evaluation.json)：12/12 原始案例先失败；12/12 定位并提出预期文件补丁；12/12 确认前零写入、重启后恢复、确认后测试通过，重复确认保持幂等。这里使用的是确定性规则规划器，**不能解释为真实大模型修复成功率**。
 
+真实模型评测入口为 `scripts/run_model_evaluation.py`。它会把失败日志及候选 Java 源码发送给配置的模型供应商，必须先确认数据授权；报告记录模型、地址、逐例结果和延迟，但不会记录 API Key。
+
+GitHub Actions 会运行 17 项单元测试与 12 类离线端到端评测，阻止工作流、安全边界或修复行为回归。
+
+## 简历证据索引
+
+| 表述 | 证据 | 限制 |
+| --- | --- | --- |
+| 12 类故障基线全部修复 | `evaluation_data/cases.json`、`reports/offline-evaluation.json` | 确定性规划器，不是模型成功率 |
+| 确认前零写入、重启恢复、重复确认幂等均为 12/12 | 同一逐例报告 | 固定虚构故障集 |
+| 17 项单元测试通过 | `tests/` 与 GitHub Actions | 工程回归，不是业务效果 |
+| OpenAI 兼容模型入口 | `providers.py`、`run_model_evaluation.py` | 真实指标必须实际外部评测后再写 |
+
 ## 项目边界
 
 - 当前测试运行器适配单模块 Javac 主类测试和 Maven 单测试类，尚未覆盖多模块构建图。
-- 真实模型接口已实现并用模拟 HTTP 响应验证契约，但尚未在固定数据集上做外部模型修复评测。
+- 真实模型接口与批量评测入口已实现；外部模型结果必须在获得明确数据授权并实际运行后才能作为项目指标。
 - SQLite 适合个人演示；多实例服务应改用共享检查点与分布式执行回执。

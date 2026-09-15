@@ -54,8 +54,6 @@ def evaluate_case(case: dict[str, str], args: argparse.Namespace) -> dict[str, o
             java_executable=args.java,
             javac_executable=args.javac,
         )
-        baseline = runner.run(case["test_target"])
-
         first = build_offline_workflow(
             root,
             state_dir=state_dir,
@@ -72,6 +70,9 @@ def evaluate_case(case: dict[str, str], args: argparse.Namespace) -> dict[str, o
         unchanged_before_confirmation = (
             policy.read_text(case["expected_file"]) == expected_before
         )
+        baseline = waiting.baseline_test_result
+        if baseline is None:
+            raise RuntimeError("工作流未记录修复前测试结果")
         first.close()
 
         recovered = build_offline_workflow(

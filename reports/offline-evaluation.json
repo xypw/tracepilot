@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-09-15T10:59:47.274184+00:00",
+    "generated_at": "2026-09-15T14:51:29.895032+00:00",
     "mode": "offline_rule_based_planner",
     "case_count": 12,
     "cases_file": "cases.json",
@@ -18,7 +18,7 @@
     "task_success_rate": 1.0,
     "targeted_test_pass_rate": 1.0,
     "duplicate_confirmation_idempotency_rate": 1.0,
-    "average_latency_ms": 1004.8
+    "average_latency_ms": 894.4
   },
   "cases": [
     {
@@ -39,21 +39,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "对可空客户名增加确定性默认值，避免NullPointerException。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 1011.47
+      "latency_ms": 905.88
     },
     {
       "case_id": "refund-window-boundary",
@@ -73,21 +78,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "七天无理由包含第七天，修复边界条件。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 1024.85
+      "latency_ms": 898.93
     },
     {
       "case_id": "null-ticket-priority",
@@ -107,21 +117,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "对缺失优先级使用业务默认值，避免空指针。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 969.66
+      "latency_ms": 884.47
     },
     {
       "case_id": "integer-division",
@@ -141,21 +156,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "在除法前转为浮点数，避免整数除法截断。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 962.61
+      "latency_ms": 858.62
     },
     {
       "case_id": "string-reference-comparison",
@@ -175,21 +195,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "使用字符串值比较，避免引用比较导致误判。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 963.43
+      "latency_ms": 894.33
     },
     {
       "case_id": "bigdecimal-scale-comparison",
@@ -209,21 +234,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "按BigDecimal数值比较，避免小数位不同导致equals失败。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 1059.77
+      "latency_ms": 886.46
     },
     {
       "case_id": "empty-average",
@@ -243,21 +273,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "空集合没有可计算样本，先返回业务默认值，避免除零。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 1042.11
+      "latency_ms": 926.25
     },
     {
       "case_id": "list-loop-boundary",
@@ -277,21 +312,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "集合下标最大为size减一，修复越界循环边界。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 1030.2
+      "latency_ms": 942.83
     },
     {
       "case_id": "status-case-comparison",
@@ -311,21 +351,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "状态值大小写不影响业务语义，改为忽略大小写比较。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 982.17
+      "latency_ms": 882.7
     },
     {
       "case_id": "null-order-status",
@@ -345,21 +390,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "缺失订单状态时返回确定性默认值，避免空指针。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 1035.7
+      "latency_ms": 886.24
     },
     {
       "case_id": "return-eligibility-boolean",
@@ -379,21 +429,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "退货资格要求已签收且未超过七天，修复布尔条件。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 978.16
+      "latency_ms": 890.6
     },
     {
       "case_id": "order-total-overflow",
@@ -413,21 +468,26 @@
         },
         {
           "step": 2,
+          "tool": "run_targeted_test",
+          "summary": "已复现测试失败"
+        },
+        {
+          "step": 3,
           "tool": "propose_patch",
           "summary": "乘法前提升为long，避免大额订单整数溢出。"
         },
         {
-          "step": 3,
+          "step": 4,
           "tool": "human_approval",
           "summary": "用户批准补丁"
         },
         {
-          "step": 4,
+          "step": 5,
           "tool": "apply_patch_and_test",
           "summary": "补丁通过定向测试"
         }
       ],
-      "latency_ms": 997.45
+      "latency_ms": 875.44
     }
   ]
 }

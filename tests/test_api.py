@@ -46,3 +46,13 @@ def test_api_returns_404_for_unknown_run(java_fixture: Path, tmp_path: Path) -> 
         response = client.get("/runs/missing")
         assert response.status_code == 404
     workflow.close()
+
+
+def test_demo_page_is_available(java_fixture: Path, tmp_path: Path) -> None:
+    workflow = build_offline_workflow(java_fixture, state_dir=tmp_path / "state")
+    with TestClient(create_app(workflow)) as client:
+        response = client.get("/demo")
+        assert response.status_code == 200
+        assert "TracePilot" in response.text
+        assert "开始诊断" in response.text
+    workflow.close()

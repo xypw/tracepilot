@@ -1,0 +1,11 @@
+services:
+  tracepilot:
+    build: .
+    ports:
+      - "8020:8020"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8020/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped

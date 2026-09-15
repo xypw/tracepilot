@@ -33,6 +33,7 @@ class RepairState(TypedDict, total=False):
     proposal: dict[str, Any]
     diff_preview: str
     approved: bool
+    baseline_test_result: dict[str, Any]
     test_result: dict[str, Any]
     trace: list[dict[str, Any]]
     error: str
@@ -92,6 +93,28 @@ class RepairWorkflow:
             "trace": self._event(state, "propose_patch", proposal.explanation),
         }
 
+    def _verify_failure(self, state: RepairState) -> dict[str, Any]:
+        result = self.applier.runner.run(state["test_target"])
+        reproduced = not result.passed
+        return {
+            "baseline_test_result": result.model_dump(),
+            "status": (
+                RunStatus.DIAGNOSING.value
+                if reproduced
+                else RunStatus.NOT_REPRODUCED.value
+            ),
+            "error": None if reproduced else "FAILURE_NOT_REPRODUCED",
+            "trace": self._event(
+                state,
+                "run_targeted_test",
+                "已复现测试失败" if reproduced else "测试已经通过，停止自动修复",
+            ),
+        }
+
+    @staticmethod
+    def _after_verify(state: RepairState) -> str:
+        return "propose" if state["status"] == RunStatus.DIAGNOSING.value else "done"
+
     def _approval(self, state: RepairState) -> dict[str, Any]:
         proposal = PatchProposal.model_validate(state["proposal"])
         raw_decision = interrupt({
@@ -119,7 +142,19 @@ class RepairWorkflow:
 
     def _apply(self, state: RepairState) -> dict[str, Any]:
         proposal = PatchProposal.model_validate(state["proposal"])
-        result, rolled_back = self.applier.apply_and_test(proposal)
+        try:
+            result, rolled_back = self.applier.apply_and_test(proposal)
+        except Exception as error:
+            # 写入开始后异常时不能猜测结果，停止自动重试并交给人工核对。
+            return {
+                "status": RunStatus.RESULT_UNKNOWN.value,
+                "error": f"RESULT_UNKNOWN: {type(error).__name__}: {error}",
+                "trace": self._event(
+                    state,
+                    "apply_patch_and_test",
+                    "执行未形成完成回执，需要人工检查工作区",
+                ),
+            }
         status = RunStatus.COMPLETED if result.passed else RunStatus.FAILED
         summary = "补丁通过定向测试" if result.passed else (
             "测试失败，已自动回滚" if rolled_back else "测试失败"
@@ -137,12 +172,18 @@ class RepairWorkflow:
     def _build_graph(self):
         builder = StateGraph(RepairState)
         builder.add_node("locate", self._locate)
+        builder.add_node("verify_failure", self._verify_failure)
         builder.add_node("propose", self._propose)
         builder.add_node("approval", self._approval)
         builder.add_node("apply", self._apply)
         builder.add_node("canceled", self._canceled)
         builder.add_edge(START, "locate")
-        builder.add_edge("locate", "propose")
+        builder.add_edge("locate", "verify_failure")
+        builder.add_conditional_edges(
+            "verify_failure",
+            self._after_verify,
+            {"propose": "propose", "done": END},
+        )
         builder.add_edge("propose", "approval")
         builder.add_conditional_edges(
             "approval", self._after_approval, {"apply": "apply", "canceled": "canceled"}
@@ -174,6 +215,7 @@ class RepairWorkflow:
             RunStatus.CANCELED,
             RunStatus.FAILED,
             RunStatus.RESULT_UNKNOWN,
+            RunStatus.NOT_REPRODUCED,
         }:
             return current
         if current.status != RunStatus.WAITING_APPROVAL or current.proposal is None:
@@ -194,6 +236,11 @@ class RepairWorkflow:
             candidate_files=state.get("candidate_files", []),
             proposal=PatchProposal.model_validate(state["proposal"]) if state.get("proposal") else None,
             diff_preview=state.get("diff_preview"),
+            baseline_test_result=(
+                TestResult.model_validate(state["baseline_test_result"])
+                if state.get("baseline_test_result")
+                else None
+            ),
             test_result=TestResult.model_validate(state["test_result"]) if state.get("test_result") else None,
             trace=[ToolTrace.model_validate(item) for item in state.get("trace", [])],
             error=state.get("error"),
