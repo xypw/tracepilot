@@ -1,5 +1,8 @@
 # TracePilot
 
+[![CI](https://github.com/xypw/tracepilot/actions/workflows/ci.yml/badge.svg)](https://github.com/xypw/tracepilot/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/xypw/tracepilot)](https://github.com/xypw/tracepilot/releases/tag/v1.0.0)
+
 TracePilot 是一个面向 Java 测试失败的受控修复 Agent。它从 Stack Trace 定位候选源码，生成最小补丁，展示 diff 并等待人工确认；只有确认通过后才允许写入生产源码，随后运行定向测试，失败时自动回滚。
 
 本项目重点不是让大模型直接操作电脑，而是构建一个可限制、可恢复、可审计的 Agent Harness（运行时约束层）。模型只负责提出结构化补丁，路径校验、确认绑定、写入、测试、回滚和幂等回执都由确定性代码执行。
