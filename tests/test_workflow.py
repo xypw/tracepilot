@@ -20,8 +20,8 @@ def build(java_fixture: Path, state: Path):
     return build_offline_workflow(
         java_fixture,
         state_dir=state,
-        java_executable=r"D:\jdk\bin\java.exe",
-        javac_executable=r"D:\jdk\bin\javac.exe",
+        java_executable="java",
+        javac_executable="javac",
     )
 
 

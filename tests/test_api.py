@@ -15,8 +15,8 @@ def test_api_start_status_and_approve(java_fixture: Path, tmp_path: Path) -> Non
     workflow = build_offline_workflow(
         java_fixture,
         state_dir=tmp_path / "state",
-        java_executable=r"D:\jdk\bin\java.exe",
-        javac_executable=r"D:\jdk\bin\javac.exe",
+        java_executable="java",
+        javac_executable="javac",
     )
     with TestClient(create_app(workflow)) as client:
         started = client.post(
