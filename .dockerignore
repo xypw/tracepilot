@@ -5,3 +5,7 @@ __pycache__
 .tracepilot
 reports
 tests
+.env
+.env.*
+!.env.example
+*.log

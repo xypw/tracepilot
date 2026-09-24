@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-23T13:34:43.666071+00:00",
+    "mode": "openai_compatible_model_planner",
+    "model": "glm-4.7-flash",
+    "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "case_count": 1,
+    "valid_case_count": 0,
+    "evaluation_error_count": 1,
+    "cases_file": "cases.json",
+    "api_key_recorded": false
+  },
+  "metrics": {
+    "file_localization_accuracy": null,
+    "proposal_file_accuracy": null,
+    "confirmation_block_rate": null,
+    "task_success_rate": null,
+    "targeted_test_pass_rate": null,
+    "average_latency_ms": null
+  },
+  "cases": [
+    {
+      "case_id": "null-customer-name",
+      "status": "EVALUATION_ERROR",
+      "localized_expected_file": false,
+      "proposed_expected_file": false,
+      "unchanged_before_confirmation": true,
+      "task_succeeded": false,
+      "targeted_test_passed": false,
+      "error": "RuntimeError: 未进入等待确认状态: RunStatus.FAILED; 原因: MODEL_UNAVAILABLE: HTTP 429",
+      "latency_ms": 1605.9
+    }
+  ]
+}

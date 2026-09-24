@@ -72,7 +72,10 @@ def evaluate_case(case: dict[str, str], args: argparse.Namespace, api_key: str) 
                 unchanged = policy.read_text(case["expected_file"]) == before
                 proposal = waiting.proposal
                 if waiting.status != RunStatus.WAITING_APPROVAL or proposal is None:
-                    raise RuntimeError(f"未进入等待确认状态: {waiting.status}")
+                    raise RuntimeError(
+                        f"未进入等待确认状态: {waiting.status}; "
+                        f"原因: {waiting.error or 'NO_PROPOSAL'}"
+                    )
                 completed = workflow.resume(
                     waiting.run_id,
                     ApprovalRequest(

@@ -7,6 +7,7 @@ import sqlite3
 from typing import Any, TypedDict
 from uuid import uuid4
 
+import httpx
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
@@ -20,7 +21,7 @@ from tracepilot.models import (
     TestResult,
     ToolTrace,
 )
-from tracepilot.planner import PatchPlanner
+from tracepilot.planner import PatchPlanner, PlannerOutcome
 from tracepilot.tools import CodeTools, SafePatchApplier
 
 
@@ -73,24 +74,53 @@ class RepairWorkflow:
 
     def _locate(self, state: RepairState) -> dict[str, Any]:
         candidates = self.code_tools.locate_stack_files(state["failure_text"])
-        if not candidates:
-            raise ValueError("Stack Trace中的Java文件未在仓库内找到")
         return {
             "candidate_files": candidates,
-            "trace": self._event(state, "locate_stack_files", f"定位到{len(candidates)}个候选文件"),
+            "trace": self._event(state, "locate_stack_files",
+                                 f"定位到{len(candidates)}个候选文件"
+                                 if candidates else "未定位到堆栈文件，后续需搜索源码"),
         }
 
     def _propose(self, state: RepairState) -> dict[str, Any]:
-        proposal = self.planner.propose(
-            failure_text=state["failure_text"],
-            candidate_files=state["candidate_files"],
-            test_target=state["test_target"],
-        )
+        try:
+            planned = self.planner.propose(
+                failure_text=state["failure_text"],
+                candidate_files=state["candidate_files"],
+                test_target=state["test_target"],
+                baseline_result=TestResult.model_validate(state["baseline_test_result"]),
+            )
+        except httpx.HTTPStatusError as error:
+            status = error.response.status_code
+            return {
+                "status": RunStatus.FAILED.value,
+                "error": f"MODEL_UNAVAILABLE: HTTP {status}",
+                "trace": self._event(state, "model_unavailable", f"模型服务返回 HTTP {status}"),
+            }
+        except httpx.RequestError:
+            return {
+                "status": RunStatus.FAILED.value,
+                "error": "MODEL_UNAVAILABLE: request failed",
+                "trace": self._event(state, "model_unavailable", "模型服务请求失败"),
+            }
+        except (ValueError, RuntimeError) as error:
+            return {
+                "status": RunStatus.FAILED.value,
+                "error": f"DIAGNOSIS_FAILED: {error}",
+                "trace": self._event(state, "diagnosis_failed", str(error)[:150]),
+            }
+        proposal = planned.proposal if isinstance(planned, PlannerOutcome) else planned
+        trace = list(state.get("trace", []))
+        if isinstance(planned, PlannerOutcome):
+            for tool, summary in planned.events:
+                trace.append(ToolTrace(step=len(trace) + 1, tool=tool,
+                                       summary=summary).model_dump())
+        trace.append(ToolTrace(step=len(trace) + 1, tool="propose_patch",
+                               summary=proposal.explanation).model_dump())
         return {
             "proposal": proposal.model_dump(),
             "diff_preview": self.applier.preview(proposal),
             "status": RunStatus.WAITING_APPROVAL.value,
-            "trace": self._event(state, "propose_patch", proposal.explanation),
+            "trace": trace,
         }
 
     def _verify_failure(self, state: RepairState) -> dict[str, Any]:
@@ -140,6 +170,10 @@ class RepairWorkflow:
     def _after_approval(state: RepairState) -> str:
         return "apply" if state.get("approved") else "canceled"
 
+    @staticmethod
+    def _after_propose(state: RepairState) -> str:
+        return "approval" if state["status"] == RunStatus.WAITING_APPROVAL.value else "done"
+
     def _apply(self, state: RepairState) -> dict[str, Any]:
         proposal = PatchProposal.model_validate(state["proposal"])
         try:
@@ -184,7 +218,9 @@ class RepairWorkflow:
             self._after_verify,
             {"propose": "propose", "done": END},
         )
-        builder.add_edge("propose", "approval")
+        builder.add_conditional_edges(
+            "propose", self._after_propose, {"approval": "approval", "done": END}
+        )
         builder.add_conditional_edges(
             "approval", self._after_approval, {"apply": "apply", "canceled": "canceled"}
         )

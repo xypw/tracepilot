@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tracepilot.planner import ModelPatchPlanner, RuleBasedPatchPlanner
+from tracepilot.planner import AgenticPatchPlanner, RuleBasedPatchPlanner
 from tracepilot.providers import OpenAICompatibleModelCaller
 from tracepilot.security import WorkspacePolicy
 from tracepilot.tools import CodeTools, JavacMainTestRunner, SafePatchApplier
@@ -73,7 +73,14 @@ def build_model_workflow(
     )
     workflow = RepairWorkflow(
         CodeTools(policy),
-        ModelPatchPlanner(policy, caller),
+        AgenticPatchPlanner(
+            policy, caller,
+            lambda trial_root: JavacMainTestRunner(
+                trial_root,
+                java_executable=java_executable,
+                javac_executable=javac_executable,
+            ),
+        ),
         applier,
         checkpoint_path=state_root / "checkpoints.sqlite3",
     )

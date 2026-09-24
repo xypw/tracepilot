@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from difflib import unified_diff
 from pathlib import Path
+import os
 import re
 import subprocess
 import tempfile
@@ -13,6 +14,16 @@ from typing import Protocol
 
 from tracepilot.models import FileMatch, PatchProposal, TestResult
 from tracepilot.security import WorkspacePolicy, WorkspaceViolation
+
+
+def test_process_environment() -> dict[str, str]:
+    """仅传递启动 JDK 所需的环境；不向测试子进程继承模型密钥或 JVM 注入参数。
+
+    这不是操作系统沙箱：本机测试仍只能运行已信任的代码。
+    """
+    allowed = {"PATH", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT",
+               "TEMP", "TMP", "TMPDIR", "JAVA_HOME", "LANG", "LC_ALL"}
+    return {key: value for key, value in os.environ.items() if key.upper() in allowed}
 
 
 class TestRunner(Protocol):
@@ -85,6 +96,7 @@ class MavenTestRunner:
             capture_output=True,
             timeout=self.timeout_seconds,
             shell=False,
+            env=test_process_environment(),
         )
         output = (completed.stdout + "\n" + completed.stderr)[-4_000:]
         return TestResult(
@@ -122,6 +134,7 @@ class JavacMainTestRunner:
         with tempfile.TemporaryDirectory(prefix="tracepilot-javac-") as output_dir:
             compile_command = [
                 self.javac_executable,
+                "-proc:none",
                 "-encoding",
                 "UTF-8",
                 "-d",
@@ -137,6 +150,7 @@ class JavacMainTestRunner:
                 capture_output=True,
                 timeout=self.timeout_seconds,
                 shell=False,
+                env=test_process_environment(),
             )
             if compiled.returncode != 0:
                 output = (compiled.stdout + "\n" + compiled.stderr)[-4_000:]
@@ -156,6 +170,7 @@ class JavacMainTestRunner:
                 capture_output=True,
                 timeout=self.timeout_seconds,
                 shell=False,
+                env=test_process_environment(),
             )
             output = (tested.stdout + "\n" + tested.stderr)[-4_000:]
             return TestResult(
@@ -187,7 +202,11 @@ class SafePatchApplier:
         return row[0] if row else None
 
     def preview(self, proposal: PatchProposal) -> str:
+        if self.policy.source_sha256(proposal.relative_path) != proposal.source_sha256:
+            raise WorkspaceViolation("源码已变化，不能展示旧补丁供确认")
         original = self.policy.read_text(proposal.relative_path)
+        if original.count(proposal.old_text) != 1:
+            raise WorkspaceViolation("待替换代码不是唯一匹配")
         updated = original.replace(proposal.old_text, proposal.new_text, 1)
         return "".join(unified_diff(
             original.splitlines(keepends=True),
