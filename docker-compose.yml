@@ -1,6 +1,9 @@
 services:
   tracepilot:
     build: .
+    environment:
+      # 仅内置虚构 Java 样例使用容器内固定测试器；真实模型路径强制单独沙箱。
+      TRACEPILOT_TRUSTED_LOCAL_RUNNER: "1"
     ports:
       - "127.0.0.1:8020:8020"
     healthcheck:

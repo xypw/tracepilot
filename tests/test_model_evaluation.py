@@ -28,6 +28,7 @@ def test_evaluation_closes_sqlite_before_temporary_directory_cleanup(monkeypatch
             state_dir=state_dir,
             java_executable="java",
             javac_executable="javac",
+            trusted_local_runner=True,
         )
         return workflow, _DummyCaller()
 

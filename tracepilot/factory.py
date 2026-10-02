@@ -6,6 +6,7 @@ from pathlib import Path
 
 from tracepilot.planner import AgenticPatchPlanner, RuleBasedPatchPlanner
 from tracepilot.providers import OpenAICompatibleModelCaller
+from tracepilot.sandbox import DockerJavacSandboxRunner
 from tracepilot.security import WorkspacePolicy
 from tracepilot.tools import CodeTools, JavacMainTestRunner, SafePatchApplier
 from tracepilot.workflow import RepairWorkflow
@@ -17,16 +18,22 @@ def build_offline_workflow(
     state_dir: str | Path,
     java_executable: str = "java",
     javac_executable: str = "javac",
+    trusted_local_runner: bool = False,
+    sandbox_image: str = "eclipse-temurin:17-jdk-jammy",
 ) -> RepairWorkflow:
-    """创建可离线复现的工作流；规划器不调用外部模型。"""
+    """离线规划器不调用模型；宿主机执行仅限显式信任的样例。"""
     state_root = Path(state_dir)
     state_root.mkdir(parents=True, exist_ok=True)
     policy = WorkspacePolicy(workspace_root)
     tools = CodeTools(policy)
-    runner = JavacMainTestRunner(
-        workspace_root,
-        java_executable=java_executable,
-        javac_executable=javac_executable,
+    runner = (
+        JavacMainTestRunner(
+            workspace_root,
+            java_executable=java_executable,
+            javac_executable=javac_executable,
+        )
+        if trusted_local_runner
+        else DockerJavacSandboxRunner(workspace_root, image=sandbox_image)
     )
     applier = SafePatchApplier(
         policy,
@@ -51,16 +58,13 @@ def build_model_workflow(
     model: str,
     java_executable: str = "java",
     javac_executable: str = "javac",
+    sandbox_image: str = "eclipse-temurin:17-jdk-jammy",
 ) -> tuple[RepairWorkflow, OpenAICompatibleModelCaller]:
-    """创建真实模型规划工作流；调用方负责在结束时关闭两个对象。"""
+    """真实模型的基线、试修和正式复测均须使用 Docker 沙箱。"""
     state_root = Path(state_dir)
     state_root.mkdir(parents=True, exist_ok=True)
     policy = WorkspacePolicy(workspace_root)
-    runner = JavacMainTestRunner(
-        workspace_root,
-        java_executable=java_executable,
-        javac_executable=javac_executable,
-    )
+    runner = DockerJavacSandboxRunner(workspace_root, image=sandbox_image)
     applier = SafePatchApplier(
         policy,
         runner,
@@ -75,10 +79,8 @@ def build_model_workflow(
         CodeTools(policy),
         AgenticPatchPlanner(
             policy, caller,
-            lambda trial_root: JavacMainTestRunner(
-                trial_root,
-                java_executable=java_executable,
-                javac_executable=javac_executable,
+            lambda trial_root: DockerJavacSandboxRunner(
+                trial_root, image=sandbox_image,
             ),
         ),
         applier,

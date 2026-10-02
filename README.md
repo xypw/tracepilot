@@ -40,35 +40,50 @@ LangGraph 负责审批和执行状态，SQLite 保存检查点与幂等回执；
 
 ## 安全边界
 
-- 只接受仓库内相对路径，拒绝 `..`、绝对路径、符号链接和 Windows 重解析点。
+- 只接受使用 `/` 的仓库内相对路径；读取、搜索共用路径检查，拒绝隐藏路径、构建目录、控制字符、`..`、绝对路径、符号链接和 Windows 重解析点。
 - 只读取允许的文本类型，只修改 `src/main/java/**/*.java`。
-- 测试目标必须是 Java 类名格式，测试执行不经过 Shell。
+- Java 编译仅收集 `src/main/java/` 和 `src/test/java/`，共用文件大小、数量与链接检查；显式限制类路径、源码路径并禁用注解处理和隐式源码编译。
+- 测试目标必须是 Java 类名格式；模型不能提交 Shell 命令，容器执行器仅调用固定的编译与测试脚本。
 - 模型只访问文件白名单；试修副本不复制 `.git`、环境文件或其他不允许读取的仓库内容。
 - 补丁同时绑定源文件 SHA-256 与提案 SHA-256；确认后源文件变化则拒绝执行。
 - 测试失败自动恢复原文件；执行回执状态不明确时停止自动重试并要求人工检查。
 
+项目的开发验证 Skill 位于 [tracepilot-regression](.agents/skills/tracepilot-regression/SKILL.md)，用于根据代码改动选择回归与解释验证证据。它不参与模型运行时的权限判定。
+
+统一文件与编译边界后的本机复核见[操作边界回归记录](docs/operation-boundaries-20261002.md)：59 项相关回归通过，10 项符号链接创建权限受限而跳过；另有真实 Windows 目录联接与 Docker 探针验证，以及 12 类固定离线故障的[逐例结果](reports/operation-boundaries-20261002.json)。
+
 ## 本地运行
 
-要求 Python 3.11+ 和 JDK 17+。
+要求 Python 3.11+。默认测试执行器还要求本机 Docker 已运行，且事先由用户准备可信的 `eclipse-temurin:17-jdk-jammy` 镜像；运行时使用 `--pull=never`，不会自动下载镜像，也不会在沙箱不可用时回退到宿主机。只有显式选择可信本地样例运行器时才需要宿主机 JDK 17+。
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 $env:TRACEPILOT_WORKSPACE_ROOT = "C:\path\to\java-project"
 $env:TRACEPILOT_STATE_DIR = "C:\path\to\tracepilot-state"
-$env:TRACEPILOT_JAVA = "C:\path\to\java.exe"
-$env:TRACEPILOT_JAVAC = "C:\path\to\javac.exe"
 .\.venv\Scripts\python.exe -m uvicorn tracepilot.main:app --port 8020
 ```
 
 打开 `http://127.0.0.1:8020/docs` 查看 FastAPI 接口文档。默认 `TRACEPILOT_PLANNER=offline`，用于无外部 API 的可复现演示。
 打开 `http://127.0.0.1:8020/demo` 可在页面中提交失败日志、查看 diff，并选择确认或拒绝。
 
-也可以使用 Docker Compose 启动内置的虚构 Java 故障样例：
+也可以使用 Docker Compose 启动内置的虚构 Java 故障样例。该 Compose 明确使用容器内的可信本地运行器，不挂载宿主机仓库或 Docker Socket；它不是接收陌生仓库的入口：
 
 ```powershell
 docker compose up --build
 ```
+
+若仅在本机对自己信任的 Java 样例使用旧运行器，可显式设置 `TRACEPILOT_TRUSTED_LOCAL_RUNNER=1`，同时配置 `TRACEPILOT_JAVA`、`TRACEPILOT_JAVAC`。不要对陌生项目启用这个开关。真实模型路径始终要求独立测试容器；不要为了让容器内的 API 使用 Docker 而向其挂载 Docker Socket。
+
+准备好镜像后，可显式运行一条真实容器验收。该测试使用虚构 Java 源码，检查非 root、无外部网络接口、只读源码和根目录、私有环境变量隔离以及资源限制，不调用模型：
+
+```powershell
+$env:TRACEPILOT_DOCKER_TESTS = "1"
+.\.venv\Scripts\python.exe -m pytest tests/test_sandbox_integration.py -q
+Remove-Item Env:TRACEPILOT_DOCKER_TESTS
+```
+
+普通单元测试会跳过这条需要 Docker 的验收；它的通过结果不能替代容器运行时本身的安全审计。
 
 真实模型模式还需要：
 
@@ -124,9 +139,10 @@ GitHub Actions 会运行 Python 测试、12 类离线端到端评测并构建 Do
 
 ## 项目边界
 
-- 临时目录仅隔离试修文件，不是操作系统安全沙箱。仅运行可信演示仓库；测试代码仍可能访问本机网络和文件，不能接收陌生仓库直接执行。
-- 执行器只接受白名单内测试类，使用固定参数列表启动子进程，不接受模型提供任意 Shell。子进程只继承必要环境变量，不继承模型凭据、`JAVA_TOOL_OPTIONS`、`MAVEN_OPTS` 或 `CLASSPATH`；Javac 禁用隐式注解处理。这些措施不能替代容器权限、网络与文件系统隔离。
+- 默认执行器仅复制允许范围内的 Java 源码，使用独立 Docker 容器运行基线测试、隔离试修和确认后复测；容器禁网、非 root、只读根文件系统、只读源码挂载、临时编译目录，并限制内存、CPU 和进程数。不挂载 Docker Socket，不传递模型凭据；输出采用有界缓冲和 1 MB 总预算，禁用容器日志，超时或输出超限按本次创建的 ID 停止容器。沙箱或镜像不可用时返回失败，不在宿主机降级执行。
+- 这些措施降低了陌生 Java 代码接触宿主机数据和网络的风险，但不保证能防住容器运行时漏洞、恶意镜像或所有资源攻击；不能宣称“运行任何不可信仓库都绝对安全”。内置 Compose 演示仍使用固定的可信虚构样例。模型只能提出结构化动作，不能提交任意 Shell；Javac 禁用隐式注解处理。
 - 2026-09-24 小范围验证：执行器、环境边界与模型动作回放相关 14 项测试通过；没有新增外部真实模型修复成功率。
+- 2026-10-02 沙箱验证：33 项定向回归通过；1 条真实 Docker Java 探针通过，检查非 root、网络与文件隔离、私有环境变量及资源上限。范围与复现方式见[容器验收记录](docs/sandbox-validation-20261002.md)。
 - 当前真实模型调查路径使用单模块 Javac 主类测试与单文件补丁，尚未覆盖多模块构建图和多文件联合修复。
 - 真实模型接口与批量评测入口已实现；外部模型结果必须在获得明确数据授权并实际运行后才能作为项目指标。
 - SQLite 适合个人演示；多实例服务应改用共享检查点与分布式执行回执。

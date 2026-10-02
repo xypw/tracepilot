@@ -59,6 +59,7 @@ def evaluate_case(case: dict[str, str], args: argparse.Namespace) -> dict[str, o
             state_dir=state_dir,
             java_executable=args.java,
             javac_executable=args.javac,
+            trusted_local_runner=True,  # 仓库自带的固定虚构样例，不接受外部代码。
         )
         waiting = first.start(
             RepairRequest(
@@ -80,6 +81,7 @@ def evaluate_case(case: dict[str, str], args: argparse.Namespace) -> dict[str, o
             state_dir=state_dir,
             java_executable=args.java,
             javac_executable=args.javac,
+            trusted_local_runner=True,
         )
         restored = recovered.get(waiting.run_id)
         proposal = restored.proposal

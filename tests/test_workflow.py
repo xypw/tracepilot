@@ -22,6 +22,7 @@ def build(java_fixture: Path, state: Path):
         state_dir=state,
         java_executable="java",
         javac_executable="javac",
+        trusted_local_runner=True,
     )
 
 

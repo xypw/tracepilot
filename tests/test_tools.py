@@ -84,3 +84,21 @@ def test_tampered_patch_digest_is_rejected(java_fixture: Path) -> None:
     with pytest.raises(WorkspaceViolation, match="摘要校验失败"):
         applier.apply_and_test(tampered)
     applier.close()
+
+
+def test_preview_rejects_test_source_before_approval(java_fixture: Path) -> None:
+    policy = WorkspacePolicy(java_fixture)
+    relative = "src/test/java/demo/CustomerServiceTest.java"
+    before = policy.read_text(relative)
+    proposal = PatchProposal.create(
+        relative_path=relative, old_text=before, new_text="// remove test",
+        explanation="test-only proposal must be rejected", test_target="demo.CustomerServiceTest",
+        source_sha256=policy.source_sha256(relative),
+    )
+    applier = SafePatchApplier(policy, PassingRunner())
+    try:
+        with pytest.raises(WorkspaceViolation, match="生产源码"):
+            applier.preview(proposal)
+        assert policy.read_text(relative) == before
+    finally:
+        applier.close()

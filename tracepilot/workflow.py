@@ -22,6 +22,7 @@ from tracepilot.models import (
     ToolTrace,
 )
 from tracepilot.planner import PatchPlanner, PlannerOutcome
+from tracepilot.sandbox import SandboxUnavailable
 from tracepilot.tools import CodeTools, SafePatchApplier
 
 
@@ -124,7 +125,17 @@ class RepairWorkflow:
         }
 
     def _verify_failure(self, state: RepairState) -> dict[str, Any]:
-        result = self.applier.runner.run(state["test_target"])
+        try:
+            result = self.applier.runner.run(state["test_target"])
+        except SandboxUnavailable:
+            return {
+                "status": RunStatus.FAILED.value,
+                "error": "SANDBOX_UNAVAILABLE",
+                "trace": self._event(
+                    state, "sandbox_unavailable",
+                    "受限测试容器不可用，未在宿主机回退执行",
+                ),
+            }
         reproduced = not result.passed
         return {
             "baseline_test_result": result.model_dump(),

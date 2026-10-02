@@ -17,6 +17,7 @@ def test_api_start_status_and_approve(java_fixture: Path, tmp_path: Path) -> Non
         state_dir=tmp_path / "state",
         java_executable="java",
         javac_executable="javac",
+        trusted_local_runner=True,
     )
     with TestClient(create_app(workflow)) as client:
         started = client.post(
@@ -41,7 +42,9 @@ def test_api_start_status_and_approve(java_fixture: Path, tmp_path: Path) -> Non
 
 
 def test_api_returns_404_for_unknown_run(java_fixture: Path, tmp_path: Path) -> None:
-    workflow = build_offline_workflow(java_fixture, state_dir=tmp_path / "state")
+    workflow = build_offline_workflow(
+        java_fixture, state_dir=tmp_path / "state", trusted_local_runner=True,
+    )
     with TestClient(create_app(workflow)) as client:
         response = client.get("/runs/missing")
         assert response.status_code == 404
@@ -49,7 +52,9 @@ def test_api_returns_404_for_unknown_run(java_fixture: Path, tmp_path: Path) -> 
 
 
 def test_demo_page_is_available(java_fixture: Path, tmp_path: Path) -> None:
-    workflow = build_offline_workflow(java_fixture, state_dir=tmp_path / "state")
+    workflow = build_offline_workflow(
+        java_fixture, state_dir=tmp_path / "state", trusted_local_runner=True,
+    )
     with TestClient(create_app(workflow)) as client:
         response = client.get("/demo")
         assert response.status_code == 200

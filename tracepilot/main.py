@@ -35,6 +35,9 @@ if planner_mode == "model":
         model=required["TRACEPILOT_MODEL"],
         java_executable=os.environ.get("TRACEPILOT_JAVA", "java"),
         javac_executable=os.environ.get("TRACEPILOT_JAVAC", "javac"),
+        sandbox_image=os.environ.get(
+            "TRACEPILOT_SANDBOX_IMAGE", "eclipse-temurin:17-jdk-jammy"
+        ),
     )
 elif planner_mode == "offline":
     workflow = build_offline_workflow(
@@ -42,6 +45,10 @@ elif planner_mode == "offline":
         state_dir=state_dir,
         java_executable=os.environ.get("TRACEPILOT_JAVA", "java"),
         javac_executable=os.environ.get("TRACEPILOT_JAVAC", "javac"),
+        trusted_local_runner=os.environ.get("TRACEPILOT_TRUSTED_LOCAL_RUNNER") == "1",
+        sandbox_image=os.environ.get(
+            "TRACEPILOT_SANDBOX_IMAGE", "eclipse-temurin:17-jdk-jammy"
+        ),
     )
 else:
     raise RuntimeError("TRACEPILOT_PLANNER 只允许 offline 或 model")

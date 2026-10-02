@@ -120,7 +120,8 @@ class JavacMainTestRunner:
         javac_executable: str = "javac",
         timeout_seconds: int = 30,
     ) -> None:
-        self.root = Path(root).resolve()
+        self.policy = WorkspacePolicy(root)
+        self.root = self.policy.root
         self.java_executable = java_executable
         self.javac_executable = javac_executable
         self.timeout_seconds = timeout_seconds
@@ -128,13 +129,18 @@ class JavacMainTestRunner:
     def run(self, test_target: str) -> TestResult:
         if not self._TARGET.fullmatch(test_target):
             raise WorkspaceViolation("测试目标不在白名单格式内")
-        source_files = [str(path) for path in self.root.rglob("*.java")]
+        source_files = [str(path) for path in self.policy.java_source_files()]
         if not source_files:
             raise ValueError("仓库中没有Java源文件")
         with tempfile.TemporaryDirectory(prefix="tracepilot-javac-") as output_dir:
             compile_command = [
                 self.javac_executable,
                 "-proc:none",
+                "-classpath",
+                output_dir,
+                "-sourcepath",
+                "",
+                "-implicit:none",
                 "-encoding",
                 "UTF-8",
                 "-d",
@@ -202,6 +208,7 @@ class SafePatchApplier:
         return row[0] if row else None
 
     def preview(self, proposal: PatchProposal) -> str:
+        self.policy.resolve_file(proposal.relative_path, writable=True)
         if self.policy.source_sha256(proposal.relative_path) != proposal.source_sha256:
             raise WorkspaceViolation("源码已变化，不能展示旧补丁供确认")
         original = self.policy.read_text(proposal.relative_path)
