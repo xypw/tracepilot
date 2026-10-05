@@ -50,6 +50,12 @@ LangGraph 负责审批和执行状态，SQLite 保存检查点与幂等回执；
 
 项目的开发验证 Skill 位于 [tracepilot-regression](.agents/skills/tracepilot-regression/SKILL.md)，用于根据代码改动选择回归与解释验证证据。它不参与模型运行时的权限判定。
 
+模型调查时，`AgenticPatchPlanner` 从安装包固定位置加载 [java-test-triage](tracepilot/skills/java-test-triage/SKILL.md)，将调查规程加入每轮请求。被调查仓库的同名文件不能覆盖此规程；缺失或无效的 Skill 配置会明确失败。Skill 指导如何调查，文件范围、审批和执行权限仍由程序决定。
+
+正式执行回执绑定工作区、任务编号和补丁摘要；同一任务重试复用回执，新任务不能复用旧任务的成功结果。单个工作流实例对同一任务的审批串行处理，已接受的决定不能被相反决定覆盖。正式测试结束后再次核对目标文件，源码在测试期间变化则保留外部编辑并返回 `RESULT_UNKNOWN`。这些锁仅覆盖当前单实例用法，不构成跨进程审批保障。
+
+本轮 [审批与 Skill 修复验证](docs/review-fixes-20261005.md) 记录了 101 项通过、11 项明确跳过，以及 12 类离线故障的逐例断言；未进行外部真实模型评测或本轮 Docker 验收。
+
 统一文件与编译边界后的本机复核见[操作边界回归记录](docs/operation-boundaries-20261002.md)：59 项相关回归通过，10 项符号链接创建权限受限而跳过；另有真实 Windows 目录联接与 Docker 探针验证，以及 12 类固定离线故障的[逐例结果](reports/operation-boundaries-20261002.json)。
 
 ## 本地运行

@@ -7,10 +7,11 @@
 | 改动 | 相关检查 |
 | --- | --- |
 | `security.py` | `tests/test_security.py`；直接读取与搜索限制一致，链接/隐藏路径、源码数量和大小拒绝 |
-| `tools.py` | `tests/test_tools.py tests/test_runner_environment.py`；预览、写入、回滚及编译参数 |
+| `tools.py` | `tests/test_tools.py tests/test_runner_environment.py`；预览、按执行身份隔离回执、成功/失败后的源码漂移、回滚及编译参数 |
 | `sandbox.py`、`run_java_test.sh` | `tests/test_sandbox.py`；需要真实隔离验收时再运行 opt-in Docker 测试 |
-| `factory.py`、`workflow.py`、API | `tests/test_workflow.py tests/test_api.py`；审批、恢复、幂等及默认运行器 |
+| `factory.py`、`workflow.py`、API | `tests/test_workflow.py tests/test_api.py`；并发批准/拒绝、跨任务回执、恢复、幂等及默认运行器 |
 | 模型调查流程 | `tests/test_agentic_repair.py tests/test_model_evaluation.py`；动作回放不等于外部模型效果 |
+| 运行时 `java-test-triage` Skill 或其加载入口 | `tests/test_skill_loading.py`；确认实际模型请求包含安装包中的指引、调查仓库不能替换它、缺失或无效配置明确失败 |
 
 若改动跨越上述层，可组合相关测试，避免反复运行同一组。pytest 临时目录权限冲突时，使用仓库内新的专用 `--basetemp`，不要清理用户通用临时目录。若环境不支持创建符号链接，记录对应跳过项，不算通过。
 

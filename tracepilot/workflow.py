@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sqlite3
+from threading import Lock, RLock
 from typing import Any, TypedDict
 from uuid import uuid4
 
@@ -53,6 +54,10 @@ class RepairWorkflow:
         self.code_tools = code_tools
         self.planner = planner
         self.applier = applier
+        # Single workflow instance only; cross-process ownership needs a shared
+        # transactional execution/approval store rather than Python locks.
+        self._run_locks: dict[str, RLock] = {}
+        self._run_locks_guard = Lock()
         if checkpoint_path != ":memory:":
             checkpoint = Path(checkpoint_path)
             checkpoint.parent.mkdir(parents=True, exist_ok=True)
@@ -188,7 +193,9 @@ class RepairWorkflow:
     def _apply(self, state: RepairState) -> dict[str, Any]:
         proposal = PatchProposal.model_validate(state["proposal"])
         try:
-            result, rolled_back = self.applier.apply_and_test(proposal)
+            result, rolled_back = self.applier.apply_and_test(
+                proposal, execution_id=state["run_id"],
+            )
         except Exception as error:
             # 写入开始后异常时不能猜测结果，停止自动重试并交给人工核对。
             return {
@@ -243,20 +250,37 @@ class RepairWorkflow:
     def _config(run_id: str) -> dict[str, Any]:
         return {"configurable": {"thread_id": run_id}}
 
+    def _run_lock(self, run_id: str) -> RLock:
+        with self._run_locks_guard:
+            return self._run_locks.setdefault(run_id, RLock())
+
     def start(self, request: RepairRequest, *, run_id: str | None = None) -> RepairRunResponse:
         run_id = run_id or f"run-{uuid4().hex}"
-        self.graph.invoke({
-            "run_id": run_id,
-            "failure_text": request.failure_text,
-            "test_target": request.test_target,
-            "status": RunStatus.DIAGNOSING.value,
-            "candidate_files": [],
-            "trace": [],
-        }, config=self._config(run_id))
-        return self.get(run_id)
+        with self._run_lock(run_id):
+            if self.graph.get_state(self._config(run_id)).values:
+                raise ValueError("run_id已存在，不能重置已有执行身份")
+            self.graph.invoke({
+                "run_id": run_id,
+                "failure_text": request.failure_text,
+                "test_target": request.test_target,
+                "status": RunStatus.DIAGNOSING.value,
+                "candidate_files": [],
+                "trace": [],
+            }, config=self._config(run_id))
+            return self.get(run_id)
 
     def resume(self, run_id: str, approval: ApprovalRequest) -> RepairRunResponse:
+        with self._run_lock(run_id):
+            return self._resume_locked(run_id, approval)
+
+    def _resume_locked(self, run_id: str, approval: ApprovalRequest) -> RepairRunResponse:
         current = self.get(run_id)
+        snapshot = self.graph.get_state(self._config(run_id))
+        if current.proposal and approval.proposal_digest != current.proposal.proposal_digest:
+            raise ValueError("确认绑定的补丁指纹不匹配")
+        accepted = snapshot.values.get("approved")
+        if accepted is not None and approval.approved != accepted:
+            raise ValueError("审批决定已确定，不能提交相反决定")
         if current.status in {
             RunStatus.COMPLETED,
             RunStatus.CANCELED,
@@ -265,10 +289,13 @@ class RepairWorkflow:
             RunStatus.NOT_REPRODUCED,
         }:
             return current
+        if accepted is True and current.status == RunStatus.DIAGNOSING and snapshot.next:
+            # Recover after a persisted approval. The execution-scoped receipt
+            # returns a completed result or blocks an uncertain prior write.
+            self.graph.invoke(None, config=self._config(run_id))
+            return self.get(run_id)
         if current.status != RunStatus.WAITING_APPROVAL or current.proposal is None:
             raise ValueError("当前任务不在等待确认状态")
-        if approval.proposal_digest != current.proposal.proposal_digest:
-            raise ValueError("确认绑定的补丁指纹不匹配")
         self.graph.invoke(Command(resume=approval.model_dump()), config=self._config(run_id))
         return self.get(run_id)
 

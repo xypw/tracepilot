@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from difflib import unified_diff
+import json
 from pathlib import Path
 import os
 import re
@@ -199,22 +200,37 @@ class SafePatchApplier:
     def close(self) -> None:
         self.receipts.close()
 
-    def receipt_status(self, proposal: PatchProposal) -> str | None:
+    def _receipt_key(self, proposal: PatchProposal, execution_id: str | None) -> str:
+        if execution_id is None:
+            # Local trial callers retain their existing per-proposal identity.
+            return str(self.policy.root) + ':' + proposal.proposal_digest
+        if not execution_id:
+            raise ValueError("执行身份不能为空")
+        return 'execution-v2:' + json.dumps(
+            [str(self.policy.root), execution_id, proposal.proposal_digest],
+            ensure_ascii=False, separators=(',', ':'),
+        )
+
+    def receipt_status(
+        self, proposal: PatchProposal, *, execution_id: str | None = None,
+    ) -> str | None:
         """返回幂等回执状态，供状态查询和故障恢复使用。"""
-        key = str(self.policy.root) + ':' + proposal.proposal_digest
-        row = self.receipts.execute(
-            'SELECT status FROM receipts WHERE id=?', (key,)
-        ).fetchone()
+        key = self._receipt_key(proposal, execution_id)
+        with self.lock:
+            row = self.receipts.execute(
+                'SELECT status FROM receipts WHERE id=?', (key,)
+            ).fetchone()
         return row[0] if row else None
 
     def preview(self, proposal: PatchProposal) -> str:
-        self.policy.resolve_file(proposal.relative_path, writable=True)
+        path = self.policy.resolve_file(proposal.relative_path, writable=True)
         if self.policy.source_sha256(proposal.relative_path) != proposal.source_sha256:
             raise WorkspaceViolation("源码已变化，不能展示旧补丁供确认")
-        original = self.policy.read_text(proposal.relative_path)
+        original = path.read_bytes().decode('utf-8')
         if original.count(proposal.old_text) != 1:
             raise WorkspaceViolation("待替换代码不是唯一匹配")
         updated = original.replace(proposal.old_text, proposal.new_text, 1)
+        self._encode_updated_source(original, updated)
         return "".join(unified_diff(
             original.splitlines(keepends=True),
             updated.splitlines(keepends=True),
@@ -222,15 +238,38 @@ class SafePatchApplier:
             tofile=f"b/{proposal.relative_path}",
         ))
 
-    def apply_and_test(self, proposal: PatchProposal) -> tuple[TestResult, bool]:
-        with self.lock:
-            return self._apply_locked(proposal)
+    def _encode_updated_source(self, original: str, updated: str) -> bytes:
+        if abs(len(updated) - len(original)) > 4_000:
+            raise WorkspaceViolation("补丁规模超过限制")
+        updated_bytes = updated.encode('utf-8')
+        if len(updated_bytes) > self.policy.max_file_bytes:
+            raise WorkspaceViolation("补丁后文件超过大小限制")
+        return updated_bytes
 
-    def _apply_locked(self, proposal: PatchProposal) -> tuple[TestResult, bool]:
+    def apply_and_test(
+        self, proposal: PatchProposal, *, execution_id: str | None = None,
+    ) -> tuple[TestResult, bool]:
+        with self.lock:
+            return self._apply_locked(proposal, execution_id=execution_id)
+
+    def _apply_locked(
+        self, proposal: PatchProposal, *, execution_id: str | None,
+    ) -> tuple[TestResult, bool]:
         rebuilt = PatchProposal.create(**proposal.model_dump(exclude={'proposal_id', 'proposal_digest'}))
         if rebuilt.proposal_digest != proposal.proposal_digest:
             raise WorkspaceViolation('补丁摘要校验失败')
-        key = str(self.policy.root) + ':' + proposal.proposal_digest
+        key = self._receipt_key(proposal, execution_id)
+        if execution_id is not None:
+            legacy = self.receipts.execute(
+                'SELECT status FROM receipts WHERE id=?',
+                (self._receipt_key(proposal, None),),
+            ).fetchone()
+            # Old receipts cannot identify the owning run. An unfinished one
+            # must still block writes after upgrading to execution-scoped keys.
+            if legacy and legacy[0] != 'DONE':
+                raise WorkspaceViolation(
+                    'RESULT_UNKNOWN: 历史执行未形成回执，需要人工检查工作区'
+                )
         row = self.receipts.execute('SELECT status, result FROM receipts WHERE id=?', (key,)).fetchone()
         if row:
             if row[0] == 'DONE':
@@ -245,22 +284,22 @@ class SafePatchApplier:
         if original.count(proposal.old_text) != 1:
             raise WorkspaceViolation("待替换代码不是唯一匹配")
         updated = original.replace(proposal.old_text, proposal.new_text, 1)
-        if abs(len(updated) - len(original)) > 4_000:
-            raise WorkspaceViolation("补丁规模超过限制")
+        updated_bytes = self._encode_updated_source(original, updated)
         self.receipts.execute('INSERT INTO receipts VALUES (?, ?, NULL)', (key, 'EXECUTING'))
         self.receipts.commit()
-        updated_bytes = updated.encode('utf-8')
         path.write_bytes(updated_bytes)
         try:
             result = self.runner.run(proposal.test_target)
         except Exception:
-            if path.read_bytes() == updated_bytes:
-                path.write_bytes(original_bytes)
+            current_path = self.policy.resolve_file(proposal.relative_path, writable=True)
+            if current_path.read_bytes() == updated_bytes:
+                current_path.write_bytes(original_bytes)
             raise
+        current_path = self.policy.resolve_file(proposal.relative_path, writable=True)
+        if current_path.read_bytes() != updated_bytes:
+            raise WorkspaceViolation('RESULT_UNKNOWN: 文件在测试期间被其他进程修改，请人工检查')
         if not result.passed:
-            if path.read_bytes() != updated_bytes:
-                raise WorkspaceViolation('RESULT_UNKNOWN: 文件在测试期间被其他进程修改，请人工检查')
-            path.write_bytes(original_bytes)
+            current_path.write_bytes(original_bytes)
         self.receipts.execute('UPDATE receipts SET status=?, result=? WHERE id=?', ('DONE', result.model_dump_json(), key))
         self.receipts.commit()
         return result, not result.passed
