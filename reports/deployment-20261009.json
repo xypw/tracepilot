@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "generated_at": "2026-10-09T15:08:36.850113+00:00",
+    "mode": "offline_rule_based_planner",
+    "scenario_count": 3,
+    "recovery_scope": "service_object_recreated_from_sqlite",
+    "external_model_calls": 0,
+    "packaged_skill_sha256": "c099294fa12db59defda6f4ec8669e14a850324b6315ae9f27a684e82c05a419"
+  },
+  "checks": {
+    "start_http_200": true,
+    "waiting_for_approval": true,
+    "baseline_java_failed": true,
+    "localized_expected_file": true,
+    "proposed_expected_file": true,
+    "unchanged_before_confirmation": true,
+    "wrong_digest_http_409": true,
+    "wrong_digest_did_not_write": true,
+    "service_object_checkpoint_recovered": true,
+    "approval_http_200": true,
+    "task_succeeded": true,
+    "targeted_java_test_passed": true,
+    "approved_source_changed": true,
+    "duplicate_confirmation_same_result": true,
+    "duplicate_confirmation_did_not_write": true,
+    "duplicate_confirmation_did_not_rerun_java": true,
+    "conflicting_decision_http_409": true,
+    "rejection_canceled": true,
+    "rejection_did_not_write": true,
+    "stale_confirmation_stopped": true,
+    "stale_confirmation_explained": true,
+    "stale_confirmation_preserved_external_edit": true,
+    "stale_confirmation_did_not_run_java": true,
+    "stale_confirmation_did_not_retry": true,
+    "original_fixture_unchanged": true,
+    "packaged_skill_loads": true
+  },
+  "outcomes": {
+    "approved": "COMPLETED",
+    "rejected": "CANCELED",
+    "stale_confirmation": "RESULT_UNKNOWN"
+  },
+  "passed": 26,
+  "failed": 0,
+  "latency_ms": 1725.45
+}
